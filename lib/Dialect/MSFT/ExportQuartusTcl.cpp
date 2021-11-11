@@ -95,10 +95,17 @@ static void emit(TclOutputState &s, PlacementDB::PlacedInstance inst,
   emitPath(s, inst.path, symCache);
   // If instance name is specified, add it in between the parent entity path and
   // the child entity path.
+  StringAttr instName;
   if (auto instOp = dyn_cast<msft::InstanceOp>(inst.op))
-    s.os << instOp.instanceName() << '|';
+    instName = instOp.instanceNameAttr();
   else if (auto name = inst.op->getAttrOfType<StringAttr>("name"))
-    s.os << name.getValue() << '|';
+    instName = name;
+  if (instName) {
+    s.os << "{{" << s.symbolRefs.size() << "}}" << '|';
+    StringAttr modName = inst.op->getParentOfType<MSFTModuleOp>().getNameAttr();
+    s.symbolRefs.push_back(InnerRefAttr::get(modName, instName));
+  }
+
   s.os << inst.subpath << '\n';
 }
 
